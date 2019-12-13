@@ -3,7 +3,9 @@ Learning exercise for python strawberry-graphql library.
 
 # Setup
 clone repository:
-```git clone git@github.com:brentcklein/strawberry-prototype.git```
+```
+git clone git@github.com:brentcklein/strawberry-prototype.git
+```
 
 install requirements (NOTE: strawberry requires python 3.7+):
 ```
@@ -12,7 +14,11 @@ pip install requirements.txt
 ```
 
 check typing with mypy:
-```mypy .```
+```
+mypy .
+```
 
-run ASGI server using `uvnicorn`:
-```uvicorn app:app```
+run ASGI server using `uvicorn`:
+```
+uvicorn app:app
+```
