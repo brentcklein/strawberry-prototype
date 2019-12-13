@@ -10,7 +10,7 @@ git clone git@github.com:brentcklein/strawberry-prototype.git
 install requirements*:
 ```
 cd strawberry-prototype
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 check typing with mypy:
