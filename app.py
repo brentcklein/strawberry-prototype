@@ -33,7 +33,7 @@ class UserGroup:
 class XometryPermission(BasePermission, ABC):
     """
     Base class for all Xometry permissions.
-    Inherits from BasePermission, which defines the abstract method has_permission(info: GraphQLResolve)
+    Inherits from BasePermission, which defines the abstract method has_permission(info: GraphQLResolve) -> bool
     has_permission() should return True if permission is granted, False if not, and can optionally set self.message
     if permission is not granted to provide more information to the user.
     """
