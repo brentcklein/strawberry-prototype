@@ -23,8 +23,7 @@ run ASGI server using `uvicorn`:
 uvicorn app:app
 ```
 
-*
-NOTE: strawberry requires python 3.7+. If you see the following error message:
+*NOTE: strawberry requires python 3.7+. If you see the following error message:
 ```
 ERROR: Could not find a version that satisfies the requirement requirements.txt (from versions: none)
 ERROR: No matching distribution found for requirements.txt
