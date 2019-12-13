@@ -1,6 +1,6 @@
 import random
 from abc import ABC
-from typing import List, Optional
+from typing import List, Optional, Type
 
 import strawberry
 from graphql import GraphQLResolveInfo
@@ -61,14 +61,17 @@ class GandalfPermission(XometryPermission):
 
 
 # Define custom field decorators to collect reusable permissions
-def local_field(*args, **kwargs) -> strawberry_field:
-    # Append LocalPermission the permission_classes (if provided)
-    permissions = kwargs.get('permission_classes', [])
-    if len(permissions):
-        del kwargs['permission_classes']
-    permissions.append(LocalPermission)
+def local_field(
+        *args: object,
+        permission_classes: Optional[List[Type[XometryPermission]]] = None,
+        **kwargs: object
+) -> strawberry_field:
+    # Append LocalPermission to permission_classes (if provided)
+    if permission_classes is None:
+        permission_classes = []
+    permission_classes.append(LocalPermission)
 
-    return strawberry.field(*args, permission_classes=permissions, **kwargs)
+    return strawberry.field(*args, permission_classes=permission_classes, **kwargs)
 
 
 # Currently strawberry makes no distinction between fields and mutations, which makes it easy to stay DRY.
