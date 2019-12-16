@@ -4,6 +4,7 @@ from typing import List, Optional, Type
 
 import strawberry
 from graphql import GraphQLResolveInfo
+from starlette.datastructures import Headers as StarletteHeaders
 from strawberry import BasePermission
 from starlette.requests import Request as StarletteRequest
 
@@ -29,6 +30,26 @@ class UserGroup:
         self.users = []
 
 
+@strawberry.type
+class Company:
+    name: str
+    user_groups: List[UserGroup]
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.user_groups = []
+
+    def get_user_group(self, name: Optional[str]) -> Optional[UserGroup]:
+        group_names = [user_group.name for user_group in self.user_groups]
+        try:
+            if name is None:
+                name = ""
+            group_index = group_names.index(name)
+            return self.user_groups[group_index]
+        except ValueError:
+            return None
+
+
 # Define Permission classes
 class XometryPermission(BasePermission, ABC):
     """
@@ -51,6 +72,17 @@ class LocalPermission(XometryPermission):
             self.message = "No droids"
 
         return ret
+
+
+class AdminPermission(XometryPermission):
+    """Check to make sure the user is a member of the admin UserGroup"""
+    def has_permission(self, info: GraphQLResolveInfo) -> bool:
+        # Checking an arbitrary header as an example. strawberry uses starlette ASGI adapter to handle requests.
+        headers: StarletteHeaders = info.context['request'].headers
+        is_admin = headers.get('user_group', None) == "admins"
+        if not is_admin:
+            self.message = "Unauthorized. Must be admin."
+        return is_admin
 
 
 class GandalfPermission(XometryPermission):
@@ -80,9 +112,20 @@ local_mutation = local_field
 
 
 # Define some testing data
-accounts = UserGroup(name='customers')
-accounts.users.append(User(name="Bob", age=50, nickname=None))
-accounts.users.append(User(name="Joe", age=30, nickname="Joey"))
+xometry = Company(name='Xometry')
+
+xometry.user_groups.append(UserGroup(name='admins'))
+xometry.user_groups.append(UserGroup(name='customers'))
+
+admin_group = xometry.user_groups[0]
+admins = admin_group.users
+admins.append(User(name="Bob", age=50, nickname=None))
+admins.append(User(name="Joe", age=30, nickname="Joey"))
+
+customer_group = xometry.user_groups[1]
+customers = customer_group.users
+customers.append(User(name="Sally", age=40, nickname=None))
+customers.append(User(name="Bill", age=35, nickname="Billy"))
 
 
 # Define Query type and fields
@@ -90,14 +133,19 @@ accounts.users.append(User(name="Joe", age=30, nickname="Joey"))
 class Query:
     # This field has no permissions attached
     @strawberry.field
-    def user(self, info: GraphQLResolveInfo, idx: Optional[int] = None) -> Optional[User]:
-        idx = idx % len(accounts.users) if idx is not None else 0
-        return accounts.users[idx]
+    def users(self, info: GraphQLResolveInfo, group: str = None) -> List[User]:
+        if group is None:
+            return admins+customers
+
+        user_group: Optional[UserGroup] = xometry.get_user_group(group)
+        if user_group is None:
+            return []
+        return user_group.users
 
     # This is equivalent to @local_field
     @strawberry.field(permission_classes=[LocalPermission])
-    def group(self, info: GraphQLResolveInfo) -> UserGroup:
-        return accounts
+    def groups(self, info: GraphQLResolveInfo) -> List[UserGroup]:
+        return xometry.user_groups
 
 
 # Define Mutation type and methods
@@ -105,14 +153,30 @@ class Query:
 class Mutation:
     # Note custom field decorator that enforces LocalPermission
     @local_mutation
-    def add_user(self, info: GraphQLResolveInfo, name: str, age: int, nickname: str = None) -> User:
+    def add_user(
+            self,
+            info: GraphQLResolveInfo,
+            name: str,
+            age: int,
+            nickname: str = None,
+            group: str = None
+    ) -> User:
         user = User(name=name, age=age, nickname=nickname)
-        accounts.users.append(user)
+        user_group: Optional[UserGroup] = xometry.get_user_group(group)
+        if user_group is None:
+            user_group = customer_group
+        user_group.users.append(user)
         return user
 
     # custom decorators can accept additional permissions
-    @local_mutation(permission_classes=[GandalfPermission])
+    @local_mutation(permission_classes=[AdminPermission])
     def add_group(self, info: GraphQLResolveInfo, name: str) -> UserGroup:
+        group: UserGroup = UserGroup(name=name)
+        xometry.user_groups.append(group)
+        return group
+
+    @local_mutation(permission_classes=[GandalfPermission])
+    def add_company(self, info: GraphQLResolveInfo) -> Company:
         # Implementing to demonstrate permissions
         pass
 
