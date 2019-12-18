@@ -19,6 +19,12 @@ class User:
     age: int
     nickname: Optional[str]
 
+    # @strawberry.field marks a method as a "resolver" in graphql parlance
+    # Specifying this as a resolver causes it to be calculated only when requested by the client
+    @strawberry.field
+    def rating(self, info: GraphQLResolveInfo) -> float:
+        return random.random()
+
 
 @strawberry.type
 class UserGroup:
