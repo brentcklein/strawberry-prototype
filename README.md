@@ -20,7 +20,7 @@ mypy .
 
 run ASGI server using `uvicorn`:
 ```
-uvicorn app:app
+uvicorn app.app:app
 ```
 
 view the test client at http://127.0.0.1:8000
